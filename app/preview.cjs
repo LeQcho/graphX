@@ -1,0 +1,2 @@
+const path=require('node:path');const {createServer}=require('./server.cjs');
+(async()=>{const server=createServer({dataDir:process.env.GRAPHX_DATA_DIR||path.join(__dirname,'../.runtime/preview')});const url=await server.listen(Number(process.env.PORT)||4317);console.log('graphX preview: '+url);for(const signal of ['SIGINT','SIGTERM'])process.on(signal,async()=>{await server.close();process.exit(0);});})();

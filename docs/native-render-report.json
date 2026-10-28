@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-28T06:30:23.095Z",
+  "result": "PASS",
+  "checks": [
+    "Transparent startup: full HD, alpha zero.",
+    "Native animated title settles with correct opaque and transparent pixels.",
+    "Changing a draft does not change the native program frame.",
+    "Explicit live update changes the native frame.",
+    "PNG alpha 0/64/128/192/255 preserved exactly; raw BGRA premultiplication verified.",
+    "All seven built-in template types rendered in the native full-HD window.",
+    "Four independent active layers render together.",
+    "Emergency clear returns all 2,073,600 pixels to alpha zero."
+  ],
+  "samplesBGRA": [
+    [
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      16,
+      32,
+      64,
+      64
+    ],
+    [
+      32,
+      64,
+      128,
+      128
+    ],
+    [
+      48,
+      96,
+      192,
+      192
+    ],
+    [
+      64,
+      128,
+      255,
+      255
+    ]
+  ],
+  "renderUnderFourLayers": {
+    "fps": 50,
+    "frames": 621,
+    "width": 1920,
+    "height": 1080,
+    "lastPaint": 1793169020812
+  },
+  "hardware": {
+    "driver": true,
+    "devices": []
+  },
+  "limits": [
+    "No SDI device connected: physical key/fill, genlock, driver scheduling and end-to-end latency not verified."
+  ]
+}

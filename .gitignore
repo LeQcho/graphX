@@ -1,0 +1,6 @@
+build/
+release/
+.test-data/
+.runtime/
+*.log
+.DS_Store
