@@ -25,3 +25,27 @@ Pas de certification broadcast, pas de qualification longue durée SDI, pas de t
 ## Essai de l’application distribuée
 
 Lancement de `release/graphX.app` par macOS effectué : fenêtre « graphX Engine », moteur démarré en 1080p50, ouverture du studio et détection du pilote Blackmagic confirmées. Aucun matériel connecté n’a été trouvé et la sortie SDI est restée arrêtée. Cet essai utilise le runtime embarqué, sans dépendre d’une installation Node.js système.
+
+## Version 0.2 — conducteur
+
+28 tests automatisés réussis : modèle, API locales, export/import des PNG, ordre stable pendant le direct, prochain départ indépendant de la sélection, refus d’un GO désynchronisé, fin sans répétition, suppression, horloge pause/reprise et conversion timecode aux 5 cadences.
+
+Vérification navigateur : Espace sur le bouton GO envoie un seul élément, O retire le dernier envoyé, saisie du repère, horloge pause/reprise, glissement d’une signature à l’antenne vers une autre position sans retrait du programme, curseur de taille déplacé de 100 % à 152 % en conservant le contrôle actif.
+
+Rendu natif 0.2 : 8 contrôles réussis, alpha PNG conservé exactement, 50 images/s observées avec quatre couches. Rapport : native-render-report-v02.json. Aucun périphérique SDI connecté pendant ces vérifications.
+
+## Version 0.2.1 — OBS
+
+29 tests automatisés réussis. Un nouveau client de sortie rejoint le programme en cours sans modifier son état ni celui des SDI. La page OBS utilise le même rendu transparent que la sortie native.
+
+9 vérifications de rendu réussies dans Electron, dont le chargement de la page OBS sur un programme déjà à l’antenne et la conservation exacte des alphas PNG 0/64/128/192/255. Panneau OBS et bouton de copie vérifiés dans le navigateur. Rapport : native-render-report-v021.json.
+
+La composition réelle dans OBS reste à valider : l’ouverture de l’OBS installé a présenté une fenêtre de médias manquants de la collection existante, puis a quitté après annulation. Aucune scène ni source existante n’a été modifiée. Le fonctionnement simultané sur les prises SDI physiques reste non vérifié en l’absence de périphérique connecté.
+
+## Version 0.3 — Companion
+
+31 tests graphX et 9 tests du module Companion réussis. Les nouveaux contrôles atomiques couvrent l’ajustement des scores et du temps restant, y compris un minuteur en pause. Le module vérifie les cibles stables, les noms ambigus, la séparation préparation/antenne, le refus d’un GO obsolète, les variables, les presets, la reconnexion et l’absence de répétition après une réponse réseau perdue.
+
+Module 0.1.0 construit pour l’API Companion 2.2 et chargé dans **Companion 5.1.1**. Essai depuis les vrais boutons Companion sur un moteur isolé : deux GO successifs, OUT du dernier élément, démarrage/pause de l’horloge ; état graphX vérifié après les commandes et retours visuels observés sur les touches.
+
+Application graphX 0.3 empaquetée, signature ad hoc vérifiée, puis démarrée avec le projet existant sur 4318 : rendu natif 1920 × 1080 à 50 images/s observé. Connexion Companion remise sur 4318 ; 55 presets issus des dix graphiques du projet. Pages 100 LIVE (15 touches) et 101 GRAPHIQUES (10 touches directes) créées et exportées. Le Stream Deck physique était hors ligne ; son fonctionnement matériel et les sorties SDI restent à vérifier.

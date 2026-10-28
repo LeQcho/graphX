@@ -5,3 +5,14 @@ test('project with PNG survives export, fresh import and reload',async()=>fixtur
 test('cross-site mutation and DNS rebinding are rejected',async()=>fixture(async({url,post})=>{assert.equal((await post('/api/action',{type:'clear'},{Origin:'https://evil.example'})).status,403);const hostileStatus=await new Promise(resolve=>{require('node:http').get(url+'/api/state',{headers:{Host:'evil.example'}},r=>{r.resume();resolve(r.statusCode);});});assert.equal(hostileStatus,403);assert.equal((await fetch(url+'/api/action',{method:'POST',body:'{}'})).status,415);}));
 test('cannot replace project on air or change settings during SDI output',async()=>fixture(async({server,url,post})=>{const p=server.state.project;await post('/api/action',{type:'go'});assert.equal((await post('/api/import',p)).status,400);await post('/api/action',{type:'clear'});server.status.output.running=true;assert.equal((await post('/api/action',{type:'settings',settings:{fps:25}})).status,400);assert.equal((await post('/api/import',p)).status,400);}));
 test('non-image uploads rejected, static path traversal blocked',async()=>fixture(async({url,post})=>{assert.equal((await post('/api/media',{data:Buffer.from('<svg onload="bad()"/>').toString('base64')})).status,400);assert.equal((await fetch(url+'/media/..%2Fproject.json')).status,404);}));
+
+test('OBS page is accessible and a new output subscriber joins the current program without changing SDI',async()=>fixture(async({server,url,post})=>{
+ await post('/api/action',{type:'go'});server.status.output.running=true;
+ const before=structuredClone(server.state);
+ const page=await fetch(url+'/obs.html');assert.equal(page.status,200);assert.match(page.headers.get('content-type'),/text\/html/);
+ const html=await page.text();assert.match(html,/width="1920" height="1080"/);assert.match(html,/program.js/);
+ const controller=new AbortController();const response=await fetch(url+'/api/events',{signal:controller.signal});
+ const reader=response.body.getReader();const chunk=await reader.read();controller.abort();
+ const snapshot=JSON.parse(new TextDecoder().decode(chunk.value).split('\n')[0].slice(6));
+ assert.deepEqual(snapshot.live,before.live);assert.equal(snapshot.status.output.running,true);assert.deepEqual(server.state,before);
+}));

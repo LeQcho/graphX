@@ -37,3 +37,38 @@ Les champs texte restent en préparation ; ils ne modifient jamais implicitement
 - **Données** : le menu Projet permet un export transportable. La sauvegarde automatique est stockée localement dans le dossier Application Support/graphX.
 
 La vue Programme est le rendu logiciel de contrôle ; elle ne mesure pas le signal qui sort du BNC. Le diagnostic JSON contient les modes détectés et les compteurs utiles pour la suite.
+
+## Nouveautés 0.2 — conduite du live
+
+Activez **Mode conducteur** : la sélection actuelle devient le prochain départ. **Espace** joue ce prochain élément et arme le suivant. La fin du conducteur arrête l’avancement ; elle ne rejoue pas le dernier élément. Vous pouvez préparer un autre graphique pendant la conduite : le prochain départ reste indépendant de votre sélection.
+
+| Touche | Action |
+| --- | --- |
+| Espace | Enchaîner le prochain élément en mode conducteur ; jouer la sélection hors de ce mode |
+| O | Retirer le dernier envoyé en mode conducteur ; retirer la sélection hors de ce mode |
+| ↑ / ↓ | Parcourir et préparer les graphiques |
+| G | Recaler le prochain départ sur la sélection, sans le jouer |
+| Maj + ↑ / ↓ | Monter ou descendre la sélection dans le conducteur |
+| T | Démarrer / mettre en pause l’horloge |
+| Échap | Retirer immédiatement toutes les couches |
+| Maj + Espace | Hors mode conducteur : jouer puis sélectionner le suivant |
+
+Les raccourcis restent suspendus dans les champs de saisie et les fenêtres de dialogue. Les touches maintenues ne répètent pas les départs. Les petits boutons ↗ restent des départs manuels indépendants de la progression du conducteur. Les différentes couches restent cumulables, comme avant.
+
+Déplacez les éléments avec la poignée **⠿** à gauche du numéro, même lorsqu’ils sont à l’antenne. Le trait vert indique la destination. La copie déjà jouée et le prochain départ restent liés au graphique, pas à sa position. Approchez le pointeur du bord pour faire défiler les conducteurs longs. Maj + flèches offre une alternative au glissement.
+
+L’horloge **HH:MM:SS:FF** propose départ, pause/reprise et retour à zéro (arrêté). Chaque graphique accepte un repère dans son panneau : par exemple **00:02:30:25** pour 2 min 30 s et 25 images à 50 fps. Les repères sont enregistrés dans le projet et inclus à l’export. Ils affichent une avance ou un retard indicatif, sans déclenchement automatique. À 59,94 fps, le comptage est non-drop. L’horloge est commune aux fenêtres du studio et revient à zéro au redémarrage du moteur ou au chargement d’un projet.
+
+Les curseurs restent en place pendant les mises à jour du moteur ; leur prévisualisation suit immédiatement le déplacement. Les modifications restent hors antenne jusqu’au GO ou au bouton de mise à jour explicite.
+
+## Sortie OBS (0.2.1)
+
+Dans graphX, cliquez sur **Sortie OBS → Copier le lien OBS**. Dans OBS sur ce même Mac, ajoutez une source **Navigateur** au-dessus de vos caméras, laissez « Fichier local » décoché et collez le lien. Réglez la taille sur **1920 × 1080** et la cadence sur celle indiquée dans graphX (50 images/s par défaut). Conservez le CSS transparent par défaut : aucun chroma key n’est nécessaire.
+
+Laissez « Arrêter la source lorsqu’elle n’est pas visible » et « Actualiser le navigateur lorsque la scène devient active » décochés pour éviter les rechargements au changement de scène. À 59,94 images/s, utilisez la cadence globale correspondante d’OBS plutôt que la cadence personnalisée entière de la source.
+
+Le lien habituel est `http://127.0.0.1:4318/obs.html`. Copiez toujours celui affiché dans graphX, car le port peut changer si un autre programme occupe 4318. La page affiche seulement le programme à l’antenne ; elle est transparente lorsque toutes les couches sont retirées. Les brouillons, le conducteur et l’interface ne sont pas transmis. Gardez graphX Engine ouvert.
+
+OBS et Key + Fill peuvent fonctionner ensemble, sans obligation d’activer les SDI. Les deux sorties utilisent les mêmes commandes et le même moteur graphique, mais les rendus navigateur et SDI ne sont pas synchronisés image par image. Ce lien local fonctionne uniquement sur le Mac de graphX ; cette version n’ajoute pas de transport NDI, RTMP ou réseau vers un second ordinateur.
+
+Référence : [Source Navigateur — documentation OBS](https://obsproject.com/kb/browser-source).

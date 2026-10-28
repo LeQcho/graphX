@@ -15,6 +15,10 @@ async function runQA({server,renderer,getImage,url}){
  const samples=[0,1,2,3,4].map(i=>pixel(image,220+i*340,450));assert.deepEqual(samples.map(x=>x[3]),[0,64,128,192,255]);
  // NativeImage.toBitmap is BGRA premultiplied. This is the contract the native helper expects.
  for(let i=1;i<samples.length;i++){const alpha=samples[i][3];assert.ok(Math.abs(samples[i][2]-alpha)<=1,JSON.stringify(samples));assert.ok(Math.abs(samples[i][1]-alpha*128/255)<=1);assert.ok(Math.abs(samples[i][0]-alpha*64/255)<=1);}
+ await renderer.loadURL(url+'/obs.html');image=await settled();
+ assert.deepEqual([0,1,2,3,4].map(i=>pixel(image,220+i*340,450)),samples);
+ checks.push('OBS page joins the current program and preserves exact PNG alpha samples.');
+ await renderer.loadURL(url+'/program.html?native=1');image=await settled();
  fs.writeFileSync(path.join(dir,'native-alpha-ramp.png'),image.toPNG());fs.writeFileSync(path.join(dir,'native-alpha-ramp.bgra'),image.toBitmap());checks.push('PNG alpha 0/64/128/192/255 preserved exactly; raw BGRA premultiplication verified.');
  for(const type of ['lowerthird','title','logo','ticker','timer','score','fullscreen']){await action({type:'clear'});const id=server.state.project.cues.find(c=>c.type===type).id;await action({type:'go',id});image=await settled();fs.writeFileSync(path.join(dir,`template-${type}.png`),image.toPNG());}checks.push('All seven built-in template types rendered in the native full-HD window.');
  await action({type:'clear'});for(const type of ['lowerthird','logo','ticker','score'])await action({type:'go',id:server.state.project.cues.find(c=>c.type===type).id});await wait(3000);const render={...server.status.render};image=await settled();fs.writeFileSync(path.join(dir,'native-multilayer.png'),image.toPNG());assert.equal(server.state.live.length,4);checks.push('Four independent active layers render together.');

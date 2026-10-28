@@ -4,3 +4,7 @@ release/
 .runtime/
 *.log
 .DS_Store
+
+node_modules/
+companion/**/pkg/
+companion/**/*.tgz

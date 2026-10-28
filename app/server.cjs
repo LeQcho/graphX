@@ -43,7 +43,7 @@ function createServer({dataDir,webDir=path.join(__dirname,'../web'),onChange=()=
     if(state.live.length)throw new Error('Retire tous les graphiques avant de charger un projet.');if(status.output.running||status.output.starting)throw new Error('Arrête la sortie SDI avant de charger un projet.');
     const b=await body(req);const project=validateProject(b);const missing=[];
     for(const c of project.cues)if(c.media){if(b.media?.[c.media]){const name=storeImage(b.media[c.media]);if(name!==c.media)throw new Error('Média corrompu : '+c.label);}else if(!fs.existsSync(path.join(storage.dir,'media',c.media)))missing.push(c.label);}
-    if(missing.length)throw new Error('Médias absents : '+missing.join(', '));state.project=project;state.selectedId=project.cues[0]?.id||null;state.live=[];state.revision++;persist();broadcast();json(res,200,{ok:true});return;
+    if(missing.length)throw new Error('Médias absents : '+missing.join(', '));state.project=project;state.selectedId=project.cues[0]?.id||null;state.live=[];state.playback=createState(project).playback;state.revision++;persist();broadcast();json(res,200,{ok:true});return;
    }
    if(req.method==='POST'&&p==='/api/scan'){const scan=await onScan();status.hardware=scan;broadcast();json(res,200,scan);return;}
    if(req.method==='POST'&&p==='/api/output'){
@@ -51,13 +51,13 @@ function createServer({dataDir,webDir=path.join(__dirname,'../web'),onChange=()=
     await onOutput(b.action,state.project.settings);json(res,200,{ok:true});return;
    }
    if(req.method==='GET'&&p==='/api/program.png'){const frame=onFrame();if(!frame){json(res,503,{error:'Rendu en préparation.'});return;}res.writeHead(200,{'Content-Type':'image/png','Cache-Control':'no-store'});res.end(frame);return;}
-   if(req.method==='GET'&&p==='/api/diagnostics'){json(res,200,{app:'graphX',version:'0.1.0',...status,project:{name:state.project.name,cues:state.project.cues.length},settings:state.project.settings,platform:process.platform,arch:process.arch,versions:process.versions});return;}
+   if(req.method==='GET'&&p==='/api/diagnostics'){json(res,200,{app:'graphX',version:'0.3.0',...status,project:{name:state.project.name,cues:state.project.cues.length},settings:state.project.settings,platform:process.platform,arch:process.arch,versions:process.versions});return;}
    if(!['GET','HEAD'].includes(req.method)){json(res,405,{error:'Méthode non autorisée.'});return;}
    let file;
    if(p.startsWith('/media/')){const name=p.slice(7);if(!/^[a-f0-9]{64}\.(png|jpg|webp)$/.test(name)){json(res,404,{error:'Introuvable'});return;}file=path.join(storage.dir,'media',name);}
    else {const relative=p==='/'?'index.html':p.slice(1);file=path.resolve(webDir,relative);if(!file.startsWith(path.resolve(webDir)+path.sep)){json(res,403,{error:'Accès refusé'});return;}}
    if(!fs.existsSync(file)||!fs.statSync(file).isFile()){json(res,404,{error:'Introuvable'});return;}
-   const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp'};
+   const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp'};
    res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'");
    res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'});if(req.method==='HEAD')res.end();else fs.createReadStream(file).pipe(res);
   }catch(e){if(!res.headersSent)json(res,400,{error:e.message});else res.end();}
