@@ -1,8 +1,12 @@
+# Nouveautés graphX 0.4
+
+Ouvrez `graphX-0.4.app`. Le guide [LOTS-1-2.md](LOTS-1-2.md) détaille les scènes, CSV, groupes, sauvegardes, états de préparation et Companion 0.2.2. Qualification physique de l’UltraStudio toujours à effectuer.
+
 # Premier essai · graphX
 
 ## Sans matériel
 
-Ouvrir `graphX.app`, puis le studio. Le moteur peut rester ouvert derrière le navigateur.
+Ouvrir `graphX-0.4.app`, puis le studio. Le moteur peut rester ouvert derrière le navigateur.
 
 1. Le conducteur contient sept modèles prêts à jouer. Sélectionner **01 · Présentation** puis **GO**.
 2. Modifier le nom dans l’inspecteur. L’aperçu change ; le programme conserve l’ancien nom. Cliquer **Mettre à jour à l’antenne** pour appliquer le changement.
@@ -61,7 +65,7 @@ L’horloge **HH:MM:SS:FF** propose départ, pause/reprise et retour à zéro (a
 
 Les curseurs restent en place pendant les mises à jour du moteur ; leur prévisualisation suit immédiatement le déplacement. Les modifications restent hors antenne jusqu’au GO ou au bouton de mise à jour explicite.
 
-## Sortie OBS (0.2.1)
+## Sortie OBS (depuis 0.2.1)
 
 Dans graphX, cliquez sur **Sortie OBS → Copier le lien OBS**. Dans OBS sur ce même Mac, ajoutez une source **Navigateur** au-dessus de vos caméras, laissez « Fichier local » décoché et collez le lien. Réglez la taille sur **1920 × 1080** et la cadence sur celle indiquée dans graphX (50 images/s par défaut). Conservez le CSS transparent par défaut : aucun chroma key n’est nécessaire.
 

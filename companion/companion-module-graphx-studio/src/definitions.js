@@ -1,5 +1,5 @@
 'use strict';
-const {resolveCue,isLive,variables}=require('./control');
+const {resolveCue,isLive,variables,dispatch,assetId,activeVideo}=require('./control');
 const COLORS={dark:0x182021,mint:0xb5f4d6,red:0xe85839,white:0xffffff,amber:0xf4be61,muted:0x596463};
 function definitions(instance){
  const cues=instance.client?.state?.project.cues||[];
@@ -10,9 +10,26 @@ function definitions(instance){
  const action=(name,options,kind,transform=o=>o)=>({name,options,callback:async(event)=>{
   const o={...event.options};
   const state=instance.client?.state,intent={nextId:state?.playback.enabled?state?.playback.nextId:state?.selectedId};
-  try{await instance.client.execute((s,send)=>require('./control').dispatch(s,send,kind,transform(o),intent));}catch(e){instance.log('warn',e.message);instance.setVariableValues({last_error:e.message});}
+  try{
+   if(kind==='clear')await instance.client.clear();
+   else{
+    if(state&&kind==='asset')intent.assetId=assetId(state,o.slot)??null;
+    if(state&&kind==='video')intent.videoKey=activeVideo(state,o.target)?.key??null;
+    await instance.client.execute((s,send)=>dispatch(s,send,kind,transform(o),intent),{transportToken:state?.transportToken});
+   }
+   instance.setVariableValues({last_error:''});
+  }catch(e){instance.log('warn',e.message);instance.setVariableValues({last_error:e.message});}
  }});
+ const slots=[['last','Dernier import'],...Array.from({length:8},(_,i)=>[String(i+1),'Média '+(i+1)])];
+ const assetTarget=()=>drop('slot','Emplacement',slots,'last');
+ const videoTarget=()=>{const field=target();return {...field,default:'@activeVideo',choices:[{id:'@activeVideo',label:'Dernière vidéo à l’antenne'},...field.choices]};};
+ const groupChoices=[...new Set(cues.map(c=>c.group).filter(Boolean))];
  const actions={
+  asset:action('Média régie · préparer / afficher / retirer',[assetTarget(),drop('operation','Opération',[['toggle','Afficher / retirer'],['go','Afficher'],['out','Retirer'],['select','Préparer']],'toggle')],'asset'),
+  video:action('Vidéo à l’antenne · pause / repartir / retirer',[videoTarget(),drop('operation','Opération',[['toggle','Pause / reprise'],['restart','Repartir du début'],['out','Retirer']],'toggle')],'video'),
+  groupArm:action('Groupe · armer le premier élément (0.4+)',[{type:'dropdown',id:'group',label:'Groupe',allowCustom:true,default:groupChoices[0]||'',choices:groupChoices.map(g=>({id:g,label:g}))}],'groupArm'),
+  skip:action('Conducteur · ignorer / réintégrer (0.4+)',[target(),drop('mode','Ignorer',[['toggle','Basculer'],['on','Ignorer'],['off','Réintégrer']],'toggle')],'skip'),
+  history:action('Préparation · annuler / rétablir (0.4+)',[drop('operation','Opération',[['undo','Annuler'],['redo','Rétablir']],'undo')],'history'),
   run:action('Conducteur · GO suivant (active le mode conducteur)',[],'run'),
   graphic:action('Graphique · afficher / masquer / basculer / sélectionner',[target(),drop('operation','Opération',[['toggle','Afficher / masquer'],['go','Afficher'],['out','Masquer'],['select','Sélectionner'],['arm','Armer comme prochain']],'toggle')],'graphic'),
   outLast:action('Antenne · retirer le dernier envoyé',[],'outLast'),hideAll:action('Antenne · tout retirer avec transition',[],'hideAll'),clear:action('Antenne · tout retirer immédiatement',[],'clear'),
@@ -33,6 +50,15 @@ function definitions(instance){
  };
  const bool=(name,options,callback,color=COLORS.mint)=>({type:'boolean',name,options,defaultStyle:{bgcolor:color,color:COLORS.dark},callback:f=>{try{return instance.client.online&&callback(instance.client.state,f.options);}catch{return false;}}});
  const feedbacks={
+  assetOnAir:bool('Média régie · à l’antenne',[assetTarget()],(s,o)=>isLive(s,assetId(s,o.slot))),
+  assetPhase:bool('Média régie · préparation',[assetTarget(),drop('phase','État',[['ready','Prêt'],['available','Fichier présent'],['loading','Chargement'],['error','Erreur']],'ready')],(s,o)=>s.status.preparation?.[assetId(s,o.slot)]?.state===o.phase),
+  videoActive:bool('Vidéo à l’antenne',[videoTarget()],(s,o)=>!!activeVideo(s,o.target),COLORS.red),
+  videoPaused:bool('Vidéo en pause',[videoTarget()],(s,o)=>{const item=activeVideo(s,o.target);return !!item&&item.videoPausedAt!==null;},COLORS.amber),
+  outputError:bool('Sortie SDI en défaut',[],s=>!!s.status.output.error,COLORS.amber),
+  preparation:bool('Préparation · état du graphique ou de la scène (0.4+)',[target(),drop('state','État',[['ready','Prêt'],['available','Fichier présent'],['loading','Chargement'],['error','Erreur'],['idle','À préparer']],'ready')],(s,o)=>s.status.preparation?.[resolveCue(s,o.target).id]?.state===o.state,COLORS.amber),
+  skipped:bool('Conducteur · élément ignoré (0.4+)',[target()],(s,o)=>resolveCue(s,o.target).skip===true,COLORS.muted),
+  renderStale:bool('Moteur · rendu natif absent ou figé (0.4+)',[],s=>s.status.mode==='native'&&(!(s.status.render?.lastTick||s.status.render?.lastPaint)||instance.client.now()-(s.status.render.lastTick||s.status.render.lastPaint)>2000),COLORS.amber),
+  saveError:bool('Projet · erreur de sauvegarde',[],s=>!!s.status.saveError,COLORS.amber),
   offline:{type:'boolean',name:'Moteur déconnecté',options:[],defaultStyle:{bgcolor:COLORS.muted,color:COLORS.white},callback:()=>!instance.client?.online},
   onAir:bool('Graphique à l’antenne',[target()],(s,o)=>isLive(s,resolveCue(s,o.target).id),COLORS.red),
   selected:bool('Graphique sélectionné',[target()],(s,o)=>resolveCue(s,o.target).id===s.selectedId),
@@ -49,7 +75,7 @@ function definitions(instance){
  const fb=(feedbackId,options={},bgcolor=COLORS.red)=>({feedbackId,options,style:{bgcolor,color:COLORS.dark}});
  function button(id,category,name,text,actionId,options={},feedback=[],color=COLORS.dark){if(!groups.has(category))groups.set(category,[]);groups.get(category).push(id);presets[id]={type:'simple',name,style:{text,size:'auto',color:COLORS.white,bgcolor:color},steps:[{down:actionId?[{actionId,options}]:[],up:[]}],feedbacks:[...feedback,fb('offline',{},COLORS.muted)]};}
  const cat='01 · Régie — kit Stream Deck';
- button('run',cat,'GO suivant','GO\n'+v('next'),'run',{},[fb('end',{},COLORS.amber)],0x245b42);
+ button('run',cat,'GO suivant','GO\n'+v('next'),'run',{},[fb('end',{},COLORS.amber),fb('preparation',{target:'@next',state:'loading'},COLORS.amber),fb('preparation',{target:'@next',state:'error'},COLORS.red)],0x245b42);
  button('outLast',cat,'OUT dernier','OUT\n'+v('last'),'outLast');button('hideAll',cat,'Tout retirer avec transition','OUT ALL','hideAll',{},[fb('anyLive')]);
  button('previous',cat,'Sélection précédente','↑\nPRÉCÉDENT','navigate',{direction:-1});button('next',cat,'Sélection suivante','↓\nSUIVANT','navigate',{direction:1});
  button('arm',cat,'Recaler sur la sélection','ARMER\n'+v('selected'),'arm',{target:'@selected'});button('follow',cat,'Mode conducteur','MODE\nCONDUCTEUR','follow',{mode:'toggle'},[fb('follow',{},COLORS.mint)]);
@@ -60,9 +86,24 @@ function definitions(instance){
  button('status',cat,'État de connexion','graphX\n'+v('live_count')+' À L’ANTENNE',null);
  button('project',cat,'Nom du projet',v('project'),null);
  button('panic',cat,'Retrait immédiat — urgence','TOUT\nCOUPER','clear',{},[],0x9b2b26);
- for(const c of cues){const target={target:c.id};const states=[fb('selected',target,COLORS.mint),fb('next',target,COLORS.amber),fb('onAir',target,COLORS.red)];
-  button('toggle_'+c.id,'02 · Graphiques — afficher / masquer',c.label,v(`cue_${c.id}_name`),'graphic',{...target,operation:'toggle'},states);
+ const assetCategory='11 · Bac régie — médias dynamiques';
+ const assetFeedback=slot=>[fb('assetPhase',{slot,phase:'ready'},COLORS.mint),fb('assetPhase',{slot,phase:'loading'},COLORS.amber),fb('assetPhase',{slot,phase:'error'},COLORS.amber),fb('assetOnAir',{slot},COLORS.red)];
+ for(const [slot,label] of slots.slice(1))button('asset_'+slot,assetCategory,label,slot+' · '+v(`asset_${slot}_name`)+'\n'+v(`asset_${slot}_status`),'asset',{slot,operation:'toggle'},assetFeedback(slot),0x174950);
+ button('asset_last_prepare',assetCategory,'Préparer le dernier média','PRÉP MÉDIA\n'+v('asset_last_name'),'asset',{slot:'last',operation:'select'},assetFeedback('last'),0x174950);
+ button('asset_last_go',assetCategory,'GO dernier média','GO MÉDIA\n'+v('asset_last_name'),'asset',{slot:'last',operation:'go'},assetFeedback('last'),0x245b42);
+ button('asset_last_out',assetCategory,'OUT dernier média','OUT MÉDIA\n'+v('asset_last_name'),'asset',{slot:'last',operation:'out'},assetFeedback('last'));
+ const videoCategory='12 · Vidéo — transport';
+ const videoFeedback=target=>[fb('videoActive',{target},COLORS.red),fb('videoPaused',{target},COLORS.amber)];
+ button('video_pause',videoCategory,'Pause / reprise vidéo','PAUSE / ▶\n'+v('video_remaining'),'video',{target:'@activeVideo',operation:'toggle'},videoFeedback('@activeVideo'),0x36305e);
+ button('video_restart',videoCategory,'Repartir du début','REPARTIR\n'+v('video_remaining'),'video',{target:'@activeVideo',operation:'restart'},videoFeedback('@activeVideo'),0x36305e);
+ button('video_out',videoCategory,'Retirer la vidéo active','OUT VIDÉO\n'+v('video_name'),'video',{target:'@activeVideo',operation:'out'},videoFeedback('@activeVideo'));
+ button('video_monitor',videoCategory,'Temps restant vidéo',v('video_remaining')+'\n'+v('video_status'),null,{},videoFeedback('@activeVideo'),0x36305e);
+ for(const c of cues){const target={target:c.id};const states=[fb('preparation',{...target,state:'ready'},COLORS.mint),fb('selected',target,COLORS.mint),fb('next',target,COLORS.amber),fb('preparation',{...target,state:'loading'},COLORS.amber),fb('preparation',{...target,state:'error'},COLORS.amber),fb('onAir',target,COLORS.red)];
+  if(c.type!=='note')button('toggle_'+c.id,'02 · Graphiques — afficher / masquer',c.label,v(`cue_${c.id}_name`)+'\n'+v(`cue_${c.id}_ready`),'graphic',{...target,operation:'toggle'},states);
   button('select_'+c.id,'03 · Graphiques — préparer',c.label,v(`cue_${c.id}_name`),'graphic',{...target,operation:'select'},states);
+  if(c.type==='scene')button('scene_'+c.id,'07 · Scènes multicouches',c.label,'SCÈNE\n'+v(`cue_${c.id}_name`),'graphic',{...target,operation:'toggle'},states);
+  if(c.type!=='note')button('skip_'+c.id,'08 · SKIP',c.label,'SKIP\n'+v(`cue_${c.id}_name`),'skip',{...target,mode:'toggle'},[fb('skipped',target,COLORS.amber)]);
+  if(c.type==='video')button('video_'+c.id,videoCategory,c.label+' · pause / reprise',v(`cue_${c.id}_name`)+'\n'+v(`cue_${c.id}_video_remaining`),'video',{...target,operation:'toggle'},videoFeedback(c.id),0x36305e);
   if(c.type==='timer'){
    button('timer_'+c.id,'04 · Comptes à rebours',c.label+' · pause',v(`cue_${c.id}_name`)+'\n'+v(`cue_${c.id}_timer_text`),'timer',{...target,operation:'toggle'},[...states,fb('timerPaused',target,COLORS.amber)]);
    for(const seconds of [-30,30])button('timer_'+c.id+'_'+seconds,'04 · Comptes à rebours',c.label+' '+seconds+' s',v(`cue_${c.id}_name`)+`\n${seconds>0?'+':''}${seconds}s`,'timerAdjust',{...target,seconds});
@@ -70,9 +111,13 @@ function definitions(instance){
   }
   if(c.type==='score')for(const side of ['home','away'])for(const amount of [-1,1])button(`score_${c.id}_${side}_${amount}`,'05 · Scores',c.label+' '+side+' '+amount,v(`cue_${c.id}_${side==='home'?'title':'subtitle'}`)+'\n'+v(`cue_${c.id}_score_${side}`)+`\n${amount>0?'+':''}${amount}`,'score',{...target,side,amount});
  }
- for(let layer=1;layer<=8;layer++)button('layer_'+layer,'06 · Couches','Retirer couche '+layer,'OUT\nCOUCHE '+layer,'outLayer',{layer},[fb('layer',{layer})]);
- instance.setPresetDefinitions([...groups].map(([name,ids],i)=>({id:'section'+i,name,definitions:ids})),presets);
- const sample=instance.client?.state?variables(instance.client.state,Date.now()):{connected:0,project:'',selected:'',next:'',last:'',live_count:0,clock:'',last_error:''};
+ for(let layer=1;layer<=8;layer++)button('layer_'+layer,'06 · Couches','Retirer couche '+layer,'OUT '+v(`layer_${layer}_name`)+'\n'+v(`layer_${layer}_live`),'outLayer',{layer},[fb('layer',{layer})]);
+ for(const group of groupChoices)button('group_'+Buffer.from(group).toString('hex'),'09 · Groupes',group,'ARMER\n'+group,'groupArm',{group});
+ button('undo','10 · Préparation','Annuler la préparation','ANNULER','history',{operation:'undo'});button('redo','10 · Préparation','Rétablir la préparation','RÉTABLIR','history',{operation:'redo'});
+ button('readiness','10 · Préparation','Préparation du prochain',v('next')+'\n'+v('next_ready'),null,{},[fb('preparation',{target:'@next',state:'error'},COLORS.amber)]);
+ button('engine','10 · Préparation','Santé du moteur',v('output_status')+'\n'+v('render_fps')+' fps',null,{},[fb('renderStale',{},COLORS.amber),fb('saveError',{},COLORS.amber),fb('outputError',{},COLORS.amber)]);
+ instance.setPresetDefinitions([...groups].sort(([a],[b])=>a.localeCompare(b)).map(([name,ids])=>({id:'section'+(Number(name.slice(0,2))-1),name,definitions:ids})),presets);
+ const sample=variables(instance.client?.state||{project:{cues:[],name:'',settings:{}},playback:{clockMs:0,clockStartedAt:null},live:[],status:{mode:'web',output:{}}},Date.now());
  instance.setVariableDefinitions(Object.fromEntries([...Object.keys(sample),...('last_error'in sample?[]:['last_error'])].map(variableId=>[variableId,{name:variableId.replaceAll('_',' ')}])));
  return {actions,feedbacks,presets};
 }

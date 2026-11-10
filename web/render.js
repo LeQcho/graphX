@@ -1,8 +1,39 @@
+import {prepareVideo,releaseVideoPlayers,videoFrame} from './video.mjs';
 // Shared scene renderer: identical geometry in preview and the native 1920×1080 output.
 export const WIDTH=1920,HEIGHT=1080;
-const images=new Map();
-export function imageAsset(name){if(!name)return null;if(!images.has(name)){const image=new Image();image.src='/media/'+name;images.set(name,image);}const image=images.get(name);return image.complete&&image.naturalWidth?image:null;}
-export function preloadCues(cues){for(const c of cues)if(c.media)imageAsset(c.media);}
+const images=new Map();const IMAGE_BUDGET=256*1024*1024;let protectedMedia=new Set();
+function resource(name){
+ if(!images.has(name)){const image=new Image(),entry={image,bytes:0,last:performance.now()};entry.promise=new Promise((resolve,reject)=>{image.onload=()=>{if(image.naturalWidth>8192||image.naturalHeight>8192||image.naturalWidth*image.naturalHeight>33554432){entry.error='Image trop grande.';reject(Error(entry.error));return;}entry.bytes=image.naturalWidth*image.naturalHeight*4;resolve(image);};image.onerror=()=>{entry.error='Image illisible ou absente.';reject(Error(entry.error));};});entry.promise.catch(()=>{});images.set(name,entry);image.src='/media/'+name;}
+ const entry=images.get(name);entry.last=performance.now();return entry;
+}
+function trimCache(keep=new Set()){
+ let bytes=[...images.values()].reduce((n,e)=>n+e.bytes,0);
+ for(const [name,e]of [...images].sort((a,b)=>a[1].last-b[1].last)){if(bytes<=IMAGE_BUDGET&&images.size<=80)break;if(!keep.has(name)&&!protectedMedia.has(name)){images.delete(name);bytes-=e.bytes;e.image.src='';}}
+ return bytes;
+}
+export function imageAsset(name){if(!name)return null;const e=resource(name);return !e.error&&e.image.complete&&e.image.naturalWidth?e.image:null;}
+export function protectCues(cues){protectedMedia=new Set(cues.map(c=>c.media).filter(Boolean));trimCache();}
+export async function prepareCues(cues){
+ const keep=new Set(cues.map(c=>c.media).filter(Boolean));
+ const results=await Promise.all(cues.map(async c=>{
+  try{
+   if(c.type==='video')return {id:c.id,state:'ready',videoDurationMs:await prepareVideo(c)};
+   if(c.type==='image'&&!c.media)throw Error('Aucune image associée.');
+   if(c.media)await resource(c.media).promise;
+   return {id:c.id,state:'ready'};
+  }catch(e){return {id:c.id,state:'error',message:c.label+' : '+e.message};}
+ }));
+ const required=[...new Set([...keep,...protectedMedia])].reduce((n,name)=>n+(images.get(name)?.bytes||0),0);
+ trimCache(keep);
+ if(required>IMAGE_BUDGET){trimCache();return cues.map(c=>({id:c.id,state:'error',message:'Ressources décodées au-delà du budget de 256 Mio. Réduis la résolution des images.'}));}
+ return results;
+}
+export function preloadCues(cues){prepareCues(cues).catch(()=>{});}
+export function renderNativeFrame(canvas,image,options={}){const ctx=canvas.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);finishFrame(ctx,canvas,options);}
+function finishFrame(ctx,canvas,options){
+ if(options.key){const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);for(let i=0;i<pixels.data.length;i+=4){pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=pixels.data[i+3];pixels.data[i+3]=255;}ctx.putImageData(pixels,0,0);}
+ if(options.fill){ctx.globalCompositeOperation='destination-over';ctx.fillStyle='#000000';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.globalCompositeOperation='source-over';}
+}
 function box(c,x,y,w,h,r=0){c.beginPath();c.roundRect(x,y,w,h,r);c.fill();}
 function font(c,size,weight=600){c.font=`${weight} ${size}px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif`;}
 function fit(c,text,size,max,weight=600){font(c,size,weight);while(size>16&&c.measureText(text).width>max){size-=2;font(c,size,weight);}return size;}
@@ -14,6 +45,11 @@ function graphic(ctx,item,now,preview){
  const c=item.cue,accent=c.accent,bg=c.background,white=c.textColor;const p=preview?{alpha:1,move:0}:progress(item,now);if(p.alpha<=0)return;
  ctx.save();ctx.globalAlpha=p.alpha*c.opacity;ctx.translate(c.x||0,c.y||0);if(c.animation==='slide')ctx.translate(p.move,0);
  // Zoom around the frame center for full-frame PNGs, and around each graphic's anchor for template graphics.
+ if(c.type==='video'){
+  const video=videoFrame(item,now,preview);
+  if(video){const ratio=Math.min(WIDTH/video.videoWidth,HEIGHT/video.videoHeight)*c.scale,w=video.videoWidth*ratio,h=video.videoHeight*ratio;const [x,y]=anchor(c,w,h);ctx.drawImage(video,x,y,w,h);}
+  ctx.restore();return;
+ }
  if(c.type==='image'){
   const img=imageAsset(c.media);if(img){const ratio=Math.min(WIDTH/img.naturalWidth,HEIGHT/img.naturalHeight,1)*c.scale;const w=img.naturalWidth*ratio,h=img.naturalHeight*ratio;let [x,y]=anchor(c,w,h);if(c.position==='center'){x=(WIDTH-w)/2;y=(HEIGHT-h)/2;}ctx.drawImage(img,x,y,w,h);}ctx.restore();return;
  }
@@ -45,9 +81,9 @@ function graphic(ctx,item,now,preview){
 }
 export function render(canvas,items,now=Date.now(),options={}){
  const ctx=canvas.getContext('2d',{willReadFrequently:options.key===true});ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.setTransform(canvas.width/WIDTH,0,0,canvas.height/HEIGHT,0,0);
+ if(!options.preview)releaseVideoPlayers(items);
  const sorted=[...items].sort((a,b)=>a.cue.layer-b.cue.layer||a.enteredAt-b.enteredAt);for(const item of sorted)graphic(ctx,item,now,options.preview);
  ctx.setTransform(1,0,0,1,0,0);
- if(options.key){const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);for(let i=0;i<pixels.data.length;i+=4){pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=pixels.data[i+3];pixels.data[i+3]=255;}ctx.putImageData(pixels,0,0);}
- if(options.fill){ctx.globalCompositeOperation='destination-over';ctx.fillStyle='#000000';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.globalCompositeOperation='source-over';}
+ finishFrame(ctx,canvas,options);
 }
 export function previewItem(cue){return {key:'preview',cue,enteredAt:0,exitingAt:null,timerEndAt:Date.now()+cue.timerSeconds*1000,timerPausedAt:null};}

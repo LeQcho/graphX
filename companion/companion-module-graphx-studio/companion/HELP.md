@@ -1,5 +1,7 @@
 # graphX Studio — Companion 5.1+
 
+La build graphX Régie ajoute les catégories **Bac régie — médias dynamiques** et **Vidéo — transport**. Les emplacements 1 à 8 et Dernier import sont alimentés depuis le Studio. Les touches vidéo pilotent pause, reprise, redémarrage et retrait. **TOUT COUPER** reste disponible pendant un GO en attente.
+
 Contrôlez graphX depuis un Stream Deck ou le simulateur Companion. Ce module utilise l’API 2.2 et nécessite Companion 5.1 ou ultérieur. graphX 0.3 ou ultérieur donne accès à toutes les commandes.
 
 ## Connexion
@@ -40,3 +42,18 @@ Dans **Surfaces**, autorisez Companion à prendre en charge votre Stream Deck ; 
 Le module reprend la conduite, le show/hide dynamique, les feedbacks, les variables de contenu, les réglages visuels, timers et scores, adaptés aux fonctions réellement présentes dans graphX. Il n’ajoute pas à graphX les types de graphiques H2R absents (Google Sheets, listes, médias vidéo/audio, réseaux sociaux, téléscripteur dessiné, routage vers quatre sorties). Le contrôle réseau depuis un second ordinateur n’est pas disponible : le moteur graphX écoute uniquement en local.
 
 Module local indépendant, non encore publié dans le catalogue Bitfocus. Sources : https://github.com/LeQcho/graphX
+
+## graphX 0.4 / module 0.2 — conduite et préparation
+
+Les actions et identifiants existants sont conservés. Les presets liés de Companion 5.1 suivent les mises à jour du module.
+
+- **Scènes multicouches** : les commandes Graphique afficher/masquer/basculer et le retour ON AIR reconnaissent la scène entière. Presets dans « 07 · Scènes multicouches ».
+- **Groupes** : armer le premier élément jouable d’un groupe, sans l’envoyer. Le prochain GO conducteur le joue. Presets « 09 · Groupes ».
+- **SKIP** : ignorer/réintégrer un élément pendant l’enchaînement. Un GO explicite sur cet élément reste possible. Les notes ne se jouent pas.
+- **Annuler/rétablir** : modifie uniquement la préparation ; ne retire pas les copies à l’antenne et ne rembobine pas l’horloge. Historique de 50 étapes, en mémoire.
+- **Préparation** : feedback à choisir parmi ready, loading, error et idle. Variables `next_ready`, `selected_ready`, `next_error`, `selected_error`, et `cue_<id>_ready/error/group/skip`.
+- **Santé** : `render_fps`, `render_age_ms`, `save_error`, avec presets d’état. Ces informations concernent le logiciel ; elles ne confirment pas un signal SDI physique.
+
+La préparation native décode les images avant le GO. Si elle échoue, le programme et le prochain élément restent en place. Les commandes en cours sont protégées du double appui ; aucun renvoi automatique après une réponse réseau perdue.
+
+Les nouveaux presets apparaissent selon le contenu du projet connecté. Créez une scène ou renseignez un groupe dans graphX pour obtenir ses boutons. Les boutons ciblent des identifiants stables et survivent au réordonnancement ; un autre projet peut avoir d’autres identifiants.

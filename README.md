@@ -1,10 +1,16 @@
-# graphX · 0.1.0
+# graphX 0.4
+
+Application macOS de titrage live : conducteur web, PNG avec alpha, scènes multicouches, OBS et moteur natif Blackmagic. [Guide des lots 1 et 2](docs/LOTS-1-2.md) · [Companion 0.2.2](docs/COMPANION.md).
+
+Version de test : `release/graphX-0.4.app`. Les essais logiciels sont validés ; la qualification Key + Fill sur UltraStudio 4K reste à réaliser.
+
+La build d’essai **`release/graphX-0.4-regie.app`** ajoute l’import de médias en prestation et les commandes vidéo. Le module Companion 0.3.0 et trois pages de 15 touches sont disponibles dans le [guide régie](docs/REGIE.md).
 
 **Le direct, simplement.** Un studio de titrage dans le navigateur, un moteur de rendu local sur Mac et une sortie native Blackmagic key + fill.
 
 ## Tester maintenant
 
-1. Ouvrir **`release/graphX.app`**. Aucun Node.js ni terminal à installer.
+1. Ouvrir **`release/graphX-0.4.app`**. Aucun Node.js ni terminal à installer.
 2. Le studio s’ouvre dans le navigateur. Le moteur reste actif dans la barre de menus.
 3. Choisir un graphique, puis **GO** ou **Espace**. **O** retire le graphique sélectionné ; **Échap** retire toutes les couches.
 4. Glisser un PNG dans le conducteur, ou choisir **Importer un PNG**. Les PNG 1920 × 1080 sont centrés à 100 % pour conserver leur placement d’origine.
@@ -15,6 +21,10 @@ Le dossier `examples/` contient un titrage PNG transparent et une mire alpha. Vo
 ## Inclus
 
 - Conducteur à huit couches, sélection indépendante de l’antenne, remplacement avec transition.
+- Scènes multicouches, groupes, notes, SKIP, recherche, favoris, thèmes, CSV et annuler/rétablir.
+- Préparation des médias confirmée par le moteur natif, retour de ses pixels et diagnostic exportable.
+- Companion 5.1.1 : actions, feedbacks, variables et presets liés.
+- Sortie OBS via source Navigateur transparente.
 - Sept modèles : nom/fonction, chapitre, logo, défilement, compte à rebours, score, plein écran.
 - PNG, JPEG et WebP importés ; transparence PNG préservée, position, taille et opacité ajustables.
 - Preview avec fond de contrôle et programme avec vues Alpha / Fill / Key.
@@ -31,7 +41,7 @@ Application construite pour **Mac Apple Silicon**, testée ici sous macOS 27.0.1
 
 **Les pixels natifs et leur alpha ont été testés. Aucune sortie physique SDI n’a pu être validée : aucun UltraStudio n’était connecté pendant la construction.** La régularité matérielle, le mapping des BNC et l’incrustation finale doivent être vérifiés à la première connexion.
 
-Le studio est accessible sur le Mac hôte uniquement (127.0.0.1). Pilotage réseau distant, OGraf, vidéos avec alpha, polices importées et éditeur de formes libres ne sont pas inclus dans 0.1.0.
+Le studio est accessible sur le Mac hôte uniquement (127.0.0.1). Pilotage réseau distant, OGraf, vidéos avec alpha, polices importées et éditeur de formes libres ne sont pas inclus dans 0.4.0.
 
 La version locale est signée ad hoc, sans signature Developer ID ni notarisation Apple. Elle est livrée pour essai sur ce Mac ; la distribution à d’autres machines reste à préparer.
 
@@ -41,12 +51,26 @@ Par défaut : `~/Library/Application Support/graphX/`. `project.json` contient l
 
 Aucun compte, cloud ou service externe n’est nécessaire. Les images sont copiées localement. Aucun chargement de script HTML arbitraire n’est accepté.
 
+## Essai vidéo alpha
+
+Dans la build d’essai vidéo, **Importer une vidéo** ajoute un habillage WebM au conducteur. Utilise un **WebM VP9 avec alpha**, en 1920 × 1080 maximum, jusqu’à 250 Mio et 30 minutes. La lecture est muette. Sur le PC de régie, utilise Chrome ou Edge pour l’aperçu.
+
+La prévisualisation montre la première image. Après **GO**, le panneau sous **Programme** affiche la progression et le temps restant, avec **Pause / Reprendre**, **Repartir** et **OUT**. La vidéo se retire à la fin par défaut. L’option **Boucler jusqu’au OUT** se règle dans l’inspecteur. Un export `.graphx` inclut le fichier vidéo.
+
+Pour convertir un master qui possède déjà un canal alpha avec FFmpeg :
+
+```sh
+ffmpeg -i habillage.mov -c:v libvpx-vp9 -pix_fmt yuva420p -crf 24 -b:v 0 -an habillage.webm
+```
+
+Vérifie la transparence en prévisualisation avant le GO. [WebM avec alpha dans Chromium](https://developer.chrome.com/blog/alpha-transparency-in-chrome-video)
+
 ## Développement
 
 Node.js 22+ permet de lancer les tests et l’aperçu web :
 
 ```sh
-node --test tests/*.test.cjs
+node --test tests/*.test.cjs companion/companion-module-graphx-studio/tests/*.test.js
 node app/preview.cjs
 ```
 

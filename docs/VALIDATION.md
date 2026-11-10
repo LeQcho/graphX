@@ -1,3 +1,9 @@
+# Validation 0.4 — 29 octobre 2026
+
+58 tests automatisés réussis (serveur, modèle, conducteur, archives et Companion), 13 contrôles natifs réussis. Le rendu multicouche a été mesuré à 50 images/s. Le signal de vie natif reste actif sur une image statique. Voir [lots 1 et 2](LOTS-1-2.md) pour les scénarios et limites. Aucun UltraStudio connecté : la qualification des SDI reste à faire.
+
+## Historique des vérifications précédentes
+
 # Validation · 28 octobre 2026
 
 ## Résultats obtenus

@@ -1,10 +1,12 @@
 # graphX × Companion 5.1.1
 
-Le module **graphX Studio 0.1.0** est installé dans Companion. La connexion `graphx` utilise le port **4318** du moteur graphX sur ce Mac. Lancez `release/graphX-0.3.app` pour disposer de toutes les commandes, notamment les scores et les ajustements de durée.
+Pour le bac régie, la vidéo et les trois nouvelles pages Stream Deck, utilise le module **0.3.0** et le [guide régie](REGIE.md). Les étapes ci-dessous décrivent le pack 0.2.2.
+
+Le module **graphX Studio 0.2.2** est installé dans Companion. La connexion `graphx` utilise le port **4318** du moteur graphX sur ce Mac. Lancez `release/graphX-0.4.app` pour disposer de toutes les commandes, notamment les scores et les ajustements de durée.
 
 ## Tester maintenant
 
-1. Ouvrez Companion : http://127.0.0.1:8000/buttons/100.
+1. Ouvrez **Launch GUI** depuis l’application Companion, puis **Buttons → page 100**. Lors de la validation, son adresse était http://192.168.1.142:8000/buttons/100 ; elle peut changer avec le réseau.
 2. La page **100 · graphX · LIVE** contient les 15 commandes de conduite. Dans l’éditeur Buttons, choisissez l’outil **Press** pour les essayer à la souris.
 3. **GO** active le mode conducteur si nécessaire, joue le prochain élément et arme le suivant. **OUT** retire le dernier joué. Les flèches changent la sélection de préparation ; **ARMER** recale explicitement le prochain départ sur cette sélection.
 4. La page **101 · graphX · GRAPHIQUES** contient les dix graphiques du projet actuel, PNG compris. Appuyer affiche ; appuyer à nouveau retire. Rouge signifie à l’antenne, ambre prochain départ, vert sélectionné.
@@ -12,7 +14,7 @@ Le module **graphX Studio 0.1.0** est installé dans Companion. La connexion `gr
 
 ## Ajouter des touches
 
-Dans **Buttons → Presets → graphx**, les boutons sont générés depuis le conducteur. Le projet actuel propose **55 presets** répartis entre conduite, affichage, préparation, comptes à rebours, scores et couches.
+Dans **Buttons → Presets → graphx**, les boutons sont générés depuis le conducteur. Le projet actuel propose **69 presets** répartis entre conduite, affichage, préparation, comptes à rebours, scores, couches, SKIP et état de préparation.
 
 Déposez un preset sur une touche. Les presets liés suivent leurs définitions et utilisent l’identifiant du graphique : réordonner le conducteur ne change pas leur cible. Un nouveau graphique apparaît dans les presets, mais n’est pas ajouté automatiquement à une page déjà composée. Après changement de projet ou suppression d’un graphique, remplacez les touches devenues invalides.
 
@@ -22,11 +24,11 @@ Les actions permettent aussi de modifier les textes, position, échelle, opacit�
 
 Le dossier `release/Companion` contient :
 
-- `graphx-studio-0.1.0.tgz` : module autonome à importer depuis **Modules → Import module package** ; aucun Node.js à installer séparément.
+- `graphx-studio-0.2.2.tgz` : module autonome à importer depuis **Modules → Import module package** ; aucun Node.js à installer séparément.
 - `graphX-LIVE.companionconfig` : page de 15 touches réutilisable avec un autre projet.
 - `graphX-GRAPHIQUES.companionconfig` : page liée aux identifiants des dix graphiques de ce projet.
 
-Importez les pages depuis **Import / Export** et associez-les à la connexion `graphx`. Les exports contiennent uniquement cette connexion, sur le port 4318, sans secrets. Le module n’est pas encore publié au catalogue Bitfocus.
+Importez les pages depuis **Import / Export** et associez-les à la connexion `graphx`. Ces exports de pages existantes restent compatibles : après import, associez-les à la connexion `graphx` utilisant le module **0.2.2**. Ajoutez les nouvelles touches depuis Presets. Les exports contiennent uniquement cette connexion, sur le port 4318, sans secrets. Le module n’est pas encore publié au catalogue Bitfocus.
 
 ## Portée
 
@@ -35,3 +37,7 @@ Companion et graphX doivent tourner sur le même Mac. Le module reçoit l’éta
 Cette intégration couvre les fonctions de graphX : elle ne crée pas les fonctions H2R absentes du logiciel, comme Google Sheets, les médias vidéo/audio ou le routage vers quatre sorties. Voir [l’aide complète du module](../companion/companion-module-graphx-studio/companion/HELP.md).
 
 Références : [Companion pour H2R](https://h2r.graphics/docs/api/companion/), [presets Companion](https://companion.free/for-developers/module-development/connection-basics/presets/).
+
+## Mise à jour 0.2.2
+
+Les lots 1 et 2 ajoutent les scènes multicouches, groupes, SKIP, annuler/rétablir et les états de préparation. Voir [le guide 0.4](LOTS-1-2.md). Les pages 100 et 101 restent utilisables ; les nouveaux presets sont disponibles dans leurs catégories. L’interface Companion se rejoint avec **Launch GUI** depuis l’application : son adresse dépend de l’interface réseau choisie.
