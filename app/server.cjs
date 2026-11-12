@@ -5,6 +5,7 @@ const {Storage}=require('./storage.cjs');
 const {exportArchive,importArchive,manifest}=require('./archive.cjs');
 const {createClock}=require('./clock.cjs');
 const {Journal}=require('./journal.cjs');
+const {armedPreview}=require('./armed-preview.cjs');
 const {pipeline}=require('node:stream/promises');
 const {IMAGE_NAME,VIDEO_NAME,MAX_IMAGE,MAX_VIDEO,imageType,imageHeaderValid,storeAsset}=require('./media.cjs');
 const MAX=40*1024*1024;
@@ -41,11 +42,11 @@ async function serveVideo(req,res,file){
  if(req.method==='HEAD'){res.end();return;}
  await pipeline(fs.createReadStream(file,{start,end}),res).catch(e=>{if(!res.destroyed)throw e;});
 }
-function createServer({dataDir,webDir=path.join(__dirname,'../web'),onChange=()=>{},onOutput=async()=>{},onScan=async()=>({driver:false,devices:[]}),onFrame=()=>null,onMonitor=onFrame,onPrepare=null,mode='web'}={}){
+function createServer({dataDir,webDir=path.join(__dirname,'../web'),onChange=()=>{},onOutput=async()=>{},onScan=async()=>({driver:false,devices:[]}),onFrame=()=>null,onMonitor=onFrame,onArmedPreview=null,onPrepare=null,mode='web'}={}){
  const storage=new Storage(dataDir);const state=createState(storage.load());const clients=new Set(),pulseClients=new Set();let transportToken=crypto.randomUUID(),transport=new AbortController();let saveTimer;let shutdown=false;let port=0;const now=createClock(),journal=new Journal(dataDir);let actionChain=Promise.resolve(),saveChain=Promise.resolve(),prepareTimer;const results=new Map();let prepareEpoch=0;
  function exclusive(fn){const next=actionChain.then(fn);actionChain=next.catch(()=>{});return next;}
  const status={mode,output:{running:false,starting:false,message:mode==='web'?'Aperçu web · moteur natif non démarré':'Sortie SDI arrêtée',stats:{}},render:{fps:0,frames:0},hardware:{driver:false,devices:[]},savedAt:0,saveError:null,recovered:storage.recovered,preparation:{},health:[]};
- function snapshot(){return {...state,history:historyStatus(state),status,transportToken,serverTime:now()};}
+ function snapshot(){const preview=armedPreview(state);return {...state,armedPreview:preview?{id:preview.id,label:preview.label,key:preview.key}:null,history:historyStatus(state),status,transportToken,serverTime:now()};}
  function broadcast(){if(shutdown)return;const message=`data: ${JSON.stringify(snapshot())}\n\n`;for(const c of clients){if(c.writableLength>1024*1024){c.destroy();clients.delete(c);pulseClients.delete(c);}else c.write(message);}onChange(snapshot());}
  function saveProject(){const project=structuredClone(state.project);saveChain=saveChain.then(()=>storage.saveAsync(project)).then(()=>{status.savedAt=Date.now();status.saveError=null;}).catch(e=>{status.saveError=e.message;journal.add({kind:'save-error',message:e.message});});return saveChain;}
  function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{saveProject().then(broadcast);},180);}
@@ -180,6 +181,15 @@ function createServer({dataDir,webDir=path.join(__dirname,'../web'),onChange=()=
    if(req.method==='POST'&&p==='/api/output'){
     const b=await body(req);if(mode==='web')throw new Error('Lance graphX.app pour accéder à la sortie Blackmagic.');if(!['start','stop'].includes(b.action))throw new Error('Commande de sortie invalide.');
     await exclusive(()=>onOutput(b.action,state.project.settings));journal.add({kind:'output',action:b.action});json(res,200,{ok:true});return;
+   }
+   if(req.method==='GET'&&p==='/api/armed-preview.png'){
+    const preview=armedPreview(state);if(!preview){res.writeHead(204,{'Cache-Control':'no-store'});res.end();return;}
+    const requested=url.searchParams.get('key');if(requested&&requested!==preview.key){json(res,409,{error:'Le prochain élément a changé.'});return;}
+    if(!onArmedPreview){json(res,503,{error:'Aperçu armé disponible dans le moteur Mac.'});return;}
+    const png=await onArmedPreview(preview);
+    if(armedPreview(state)?.key!==preview.key){json(res,409,{error:'Le prochain élément a changé.'});return;}
+    if(!png){json(res,503,{error:'Aperçu en préparation.'});return;}
+    res.writeHead(200,{'Content-Type':'image/png','Cache-Control':'no-store','X-GraphX-Preview-Key':preview.key});res.end(png);return;
    }
    if(req.method==='GET'&&p==='/api/monitor.png'){if(status.render.error)throw Error(status.render.error);const frame=onMonitor();if(!frame){json(res,503,{error:'Rendu en préparation.'});return;}res.writeHead(200,{'Content-Type':'image/png','Cache-Control':'no-store','X-GraphX-Frame-Time':String(status.render.lastTick||status.render.lastPaint||0)});res.end(frame);return;}
    if(req.method==='GET'&&p==='/api/program.png'){const frame=onFrame();if(!frame){json(res,503,{error:'Rendu en préparation.'});return;}res.writeHead(200,{'Content-Type':'image/png','Cache-Control':'no-store'});res.end(frame);return;}

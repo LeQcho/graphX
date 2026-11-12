@@ -1,6 +1,6 @@
 {
   "name": "graphx-studio",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "private": true,
   "description": "Pilotage live de graphX depuis Bitfocus Companion et Stream Deck",
   "main": "src/main.js",
