@@ -49,7 +49,18 @@ function definitions(instance){
   outLayer:action('Couche · retirer les graphiques de cette couche',[number('layer','Couche',3,1,8)],'outLayer'),
  };
  const bool=(name,options,callback,color=COLORS.mint)=>({type:'boolean',name,options,defaultStyle:{bgcolor:color,color:COLORS.dark},callback:f=>{try{return instance.client.online&&callback(instance.client.state,f.options);}catch{return false;}}});
+ const activity=(name,options,isActive)=>({type:'advanced',name,options,affectedProperties:['bgcolor','color'],callback:f=>{
+  try{if(instance.client?.online&&isActive(instance.client.state,f.options))return {bgcolor:Math.floor(instance.client.now()/500)%2===0?COLORS.red:0x58221b,color:COLORS.white};}catch{}
+  return {};
+ }});
  const feedbacks={
+  assetActivity:activity('Média régie · activité clignotante',[assetTarget()],(s,o)=>isLive(s,assetId(s,o.slot))),
+  cueActivity:activity('Graphique · activité clignotante',[target()],(s,o)=>isLive(s,resolveCue(s,o.target).id)),
+  armedPreview:{type:'advanced',name:'Aperçu du prochain élément armé',options:[],affectedProperties:['png64','text','size','bgcolor','alignment','pngalignment','color'],callback:()=>{
+   const state=instance.client?.state,preview=state?.armedPreview;
+   const png=instance.client?.online&&preview?.key===instance.armedPreview?.key?instance.armedPreview?.png:null;
+   return {png64:png||'',text:png?'':!instance.client?.online?'DÉCONNECTÉ':!('armedPreview'in(state||{}))?'METTRE À JOUR\ngraphX':!preview?'FIN':'APERÇU '+(instance.armedPreview?.error?'INDISPONIBLE':'…')+'\n'+preview.label,size:14,bgcolor:COLORS.dark,color:COLORS.white,alignment:'center:center',pngalignment:'center:center'};
+  }},
   assetOnAir:bool('Média régie · à l’antenne',[assetTarget()],(s,o)=>isLive(s,assetId(s,o.slot))),
   assetPhase:bool('Média régie · préparation',[assetTarget(),drop('phase','État',[['ready','Prêt'],['available','Fichier présent'],['loading','Chargement'],['error','Erreur']],'ready')],(s,o)=>s.status.preparation?.[assetId(s,o.slot)]?.state===o.phase),
   videoActive:bool('Vidéo à l’antenne',[videoTarget()],(s,o)=>!!activeVideo(s,o.target),COLORS.red),
@@ -75,8 +86,10 @@ function definitions(instance){
  const fb=(feedbackId,options={},bgcolor=COLORS.red)=>({feedbackId,options,style:{bgcolor,color:COLORS.dark}});
  function button(id,category,name,text,actionId,options={},feedback=[],color=COLORS.dark){if(!groups.has(category))groups.set(category,[]);groups.get(category).push(id);presets[id]={type:'simple',name,style:{text,size:'auto',color:COLORS.white,bgcolor:color},steps:[{down:actionId?[{actionId,options}]:[],up:[]}],feedbacks:[...feedback,fb('offline',{},COLORS.muted)]};}
  const cat='01 · Régie — kit Stream Deck';
+ button('armedPreview','10 · Préparation','Miniature du prochain élément armé','APERÇU ARMÉ',null,{},[{feedbackId:'armedPreview',options:{}}]);
  button('run',cat,'GO suivant','GO\n'+v('next'),'run',{},[fb('end',{},COLORS.amber),fb('preparation',{target:'@next',state:'loading'},COLORS.amber),fb('preparation',{target:'@next',state:'error'},COLORS.red)],0x245b42);
  button('outLast',cat,'OUT dernier','OUT\n'+v('last'),'outLast');button('hideAll',cat,'Tout retirer avec transition','OUT ALL','hideAll',{},[fb('anyLive')]);
+ button('outLast_blink','10 · Préparation','OUT dernier · activité clignotante','OUT\n'+v('last'),'outLast',{},[{feedbackId:'cueActivity',options:{target:'@last'}}]);
  button('previous',cat,'Sélection précédente','↑\nPRÉCÉDENT','navigate',{direction:-1});button('next',cat,'Sélection suivante','↓\nSUIVANT','navigate',{direction:1});
  button('arm',cat,'Recaler sur la sélection','ARMER\n'+v('selected'),'arm',{target:'@selected'});button('follow',cat,'Mode conducteur','MODE\nCONDUCTEUR','follow',{mode:'toggle'},[fb('follow',{},COLORS.mint)]);
  button('clock',cat,'Horloge pause / reprise',v('clock'),'clock',{operation:'toggle'},[fb('clock',{},COLORS.mint)]);button('clockReset',cat,'Horloge remise à zéro','HORLOGE\nZÉRO','clock',{operation:'reset'});
@@ -92,6 +105,7 @@ function definitions(instance){
  button('asset_last_prepare',assetCategory,'Préparer le dernier média','PRÉP MÉDIA\n'+v('asset_last_name'),'asset',{slot:'last',operation:'select'},assetFeedback('last'),0x174950);
  button('asset_last_go',assetCategory,'GO dernier média','GO MÉDIA\n'+v('asset_last_name'),'asset',{slot:'last',operation:'go'},assetFeedback('last'),0x245b42);
  button('asset_last_out',assetCategory,'OUT dernier média','OUT MÉDIA\n'+v('asset_last_name'),'asset',{slot:'last',operation:'out'},assetFeedback('last'));
+ button('asset_last_toggle',assetCategory,'Dernier média · ON / OFF clignotant','MÉDIA ON/OFF\n'+v('asset_last_name'),'asset',{slot:'last',operation:'toggle'},[...assetFeedback('last'),{feedbackId:'assetActivity',options:{slot:'last'}}],0x245b42);
  const videoCategory='12 · Vidéo — transport';
  const videoFeedback=target=>[fb('videoActive',{target},COLORS.red),fb('videoPaused',{target},COLORS.amber)];
  button('video_pause',videoCategory,'Pause / reprise vidéo','PAUSE / ▶\n'+v('video_remaining'),'video',{target:'@activeVideo',operation:'toggle'},videoFeedback('@activeVideo'),0x36305e);

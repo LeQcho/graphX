@@ -7,6 +7,28 @@ app.commandLine.appendSwitch('force-device-scale-factor','1');app.commandLine.ap
 if(!app.requestSingleInstanceLock()){app.quit();}else{
  let server,output,renderer,launcher,tray,url,lastImage,quitting=false,frames=0,lastFrames=0,lastStats=performance.now(),renderTimer,healthTimer,paintTime=0,frameTickTime=0;
  const preparations=new Map();let preparationId=0;
+ let previewRenderer,previewJob,previewCache;const previewRequests=new Map();let previewRequestId=0;
+ function captureArmedPreview(preview){
+  if(previewCache?.key===preview.key)return Promise.resolve(previewCache.png);
+  if(previewJob)return previewJob.key===preview.key?previewJob.promise:Promise.reject(Error('Aperçu en préparation.'));
+  if(!previewRenderer||previewRenderer.isDestroyed())return Promise.reject(Error('Moteur d’aperçu indisponible.'));
+  const id=++previewRequestId;
+  const promise=new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>{previewRequests.delete(id);reject(Error('Délai de l’aperçu dépassé.'));},8000);
+   previewRequests.set(id,{resolve:png=>{clearTimeout(timer);previewRequests.delete(id);resolve(png);},reject:error=>{clearTimeout(timer);previewRequests.delete(id);reject(error);}});
+   previewRenderer.webContents.send('graphx:preview',{id,preview});
+  }).then(png=>{previewCache={key:preview.key,png};return png;}).finally(()=>{previewJob=null;});
+  previewJob={key:preview.key,promise};return promise;
+ }
+ ipcMain.on('graphx:previewed',(event,message)=>{
+  if(event.sender!==previewRenderer?.webContents)return;
+  const request=previewRequests.get(message.id);if(!request)return;
+  if(message.error)return request.reject(Error(message.error));
+  if(typeof message.png!=='string'||message.png.length>256*1024)return request.reject(Error('Aperçu invalide.'));
+  const png=Buffer.from(message.png,'base64');
+  if(!png.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))return request.reject(Error('Aperçu PNG invalide.'));
+  request.resolve(png);
+ });
  function prepareResources(cues,signal){return new Promise((resolve,reject)=>{
   if(!renderer||renderer.isDestroyed())return reject(Error('Moteur de rendu indisponible.'));
   const id=++preparationId;
@@ -28,7 +50,7 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
  app.whenReady().then(async()=>{
   const dataDir=app.getPath('userData');const binary=app.isPackaged?path.join(process.resourcesPath,'bin/graphx-output'):path.join(__dirname,'../build/graphx-output');
   output=new NativeOutput(binary,s=>server?.updateStatus({output:s}));
-  server=createServer({dataDir,mode:'native',onScan:()=>output.scan(),onFrame:()=>lastImage?.toPNG()||null,onMonitor:()=>lastImage?.resize({width:960,height:540}).toPNG()||null,onPrepare:prepareResources,onOutput:async(action,settings)=>{if(action==='stop')await output.stop();else{renderer.webContents.setFrameRate(Math.round(settings.fps));output.start(settings);}},onChange:s=>{if(renderer&&!renderer.isDestroyed())renderer.webContents.setFrameRate(Math.round(s.project.settings.fps));}});
+  server=createServer({dataDir,mode:'native',onScan:()=>output.scan(),onFrame:()=>lastImage?.toPNG()||null,onMonitor:()=>lastImage?.resize({width:960,height:540}).toPNG()||null,onArmedPreview:captureArmedPreview,onPrepare:prepareResources,onOutput:async(action,settings)=>{if(action==='stop')await output.stop();else{renderer.webContents.setFrameRate(Math.round(settings.fps));output.start(settings);}},onChange:s=>{if(renderer&&!renderer.isDestroyed())renderer.webContents.setFrameRate(Math.round(s.project.settings.fps));}});
   try{url=await server.listen(Number(process.env.GRAPHX_PORT)||4318);}catch(e){if(e.code==='EADDRINUSE')url=await server.listen(0);else throw e;}
   console.log('graphX Engine: '+url);if(process.env.GRAPHX_URL_FILE)fs.writeFileSync(process.env.GRAPHX_URL_FILE,url);
   renderer=new BrowserWindow({width:1920,height:1080,useContentSize:true,show:false,frame:false,transparent:true,backgroundColor:'#00000000',webPreferences:{preload:path.join(__dirname,'render-preload.cjs'),offscreen:true,backgroundThrottling:false,nodeIntegration:false,contextIsolation:true,sandbox:true,zoomFactor:1}});
@@ -41,6 +63,10 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
   renderer.webContents.on('render-process-gone',(_,details)=>{for(const pending of preparations.values()){pending.reject(Error('Moteur de rendu interrompu.'));}preparations.clear();lastImage=null;server.updateStatus({render:{fps:0,error:'Rendu interrompu : '+details.reason}});output.stop();});
   renderer.webContents.on('did-fail-load',(_,code,description)=>server.updateStatus({render:{fps:0,error:description}}));
   await renderer.loadURL(url+'/program.html?native=1');renderer.webContents.startPainting();server.prepareProject();
+  // Independent renderer: requesting a thumbnail never changes the program or SDI.
+  previewRenderer=new BrowserWindow({width:144,height:144,useContentSize:true,show:false,webPreferences:{preload:path.join(__dirname,'render-preload.cjs'),backgroundThrottling:false,nodeIntegration:false,contextIsolation:true,sandbox:true}});
+  previewRenderer.webContents.on('render-process-gone',()=>{previewCache=null;for(const request of previewRequests.values())request.reject(Error('Moteur d’aperçu interrompu.'));});
+  await previewRenderer.loadURL(url+'/armed-preview.html');
   renderTimer=setInterval(()=>{const now=performance.now(),fps=Math.round((frames-lastFrames)*1000/(now-lastStats));lastFrames=frames;lastStats=now;server.updateStatus({render:{fps,frames,width:1920,height:1080,lastPaint:paintTime,lastTick:frameTickTime}});},1000);
   // Keep the app awake during an intentional SDI output. Static frames still repeat in the hardware scheduler.
   const {powerSaveBlocker}=require('electron');let blocker=null;

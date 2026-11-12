@@ -11,8 +11,10 @@ Un projet exporté en `.graphx` emporte les médias et les affectations. **Prêt
 ## Installer le pack Stream Deck
 
 1. Lance la build **graphX Régie**. Companion tourne sur la même machine que graphX. Le port habituel est **4318** pour l’app Mac et **4317** pour l’aperçu web.
-2. Dans Companion, ouvre **Modules → Import module package** et importe `graphx-studio-0.3.0.tgz`. Sélectionne **0.3.0** sur la connexion `graphx`, ou crée-la, puis règle son port. [Documentation Bitfocus](https://companion.free/user-guide/beta/config/modules/)
-3. Dans **Import / Export**, charge les trois fichiers `.companionconfig` sur des pages libres et associe-les à la même connexion `graphx`. Les numéros 110 à 112 sont les numéros suggérés. Depuis **Surfaces**, assigne la page souhaitée au Stream Deck.
+2. Dans `companion/companion-module-graphx-studio`, exécute `npm ci`, puis `npm run package` avec Node.js 22.20 ou plus récent dans la branche 22. Dans Companion, ouvre **Modules → Import module package** et importe le fichier généré `graphx-studio-0.3.2.tgz`. Sélectionne **0.3.2** sur la connexion `graphx`, ou crée-la, puis règle son port. [Documentation Bitfocus](https://companion.free/user-guide/beta/config/modules/)
+3. Dans **Import / Export**, charge les trois fichiers `.companionconfig` de [`companion/profiles`](../companion/profiles) sur des pages libres et associe-les à la même connexion `graphx`. Depuis **Surfaces**, assigne la page souhaitée au Stream Deck. Ces exports ne contiennent ni média ni secret ; leurs noms, miniatures et états viennent du projet connecté.
+
+Le profil **LIVE PRO** sauvegardé inclut la miniature du prochain élément armé, une seule bascule **MÉDIA ON/OFF**, et le bouton **OUT** du dernier graphique. Ces deux dernières touches clignotent uniquement lorsque leur cible est à l’antenne. La miniature nécessite aussi le moteur Mac mis à jour depuis les sources de ce dépôt. Les anciens presets GO et OUT média restent disponibles pour préserver les autres configurations.
 
 | Page | Touches |
 | --- | --- |

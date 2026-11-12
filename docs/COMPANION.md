@@ -1,5 +1,17 @@
 # graphX × Companion 5.1.1
 
+## Bascules et activité — module 0.3.2
+
+Deux presets supplémentaires permettent une mise à jour ciblée des touches : **Dernier média · ON / OFF clignotant** affiche ou retire le dernier média importé ; **OUT dernier · activité clignotante** conserve l’action de retrait du dernier graphique joué. Leur fond alterne entre rouge vif et rouge sombre toutes les 500 ms uniquement quand leur cible est réellement à l’antenne. Le clignotement s’arrête dès le retrait ou la déconnexion. Les anciens presets restent inchangés pour conserver les pages personnalisées.
+
+## Miniature du prochain élément armé — module 0.3.1
+
+Le preset **Préparation → Miniature du prochain élément armé** affiche le visuel du prochain GO, son nom et un damier de transparence. Il ne déclenche aucune action. Dans le pack LIVE PRO installé sur ce Mac, il remplace la touche d’horloge (deuxième ligne, deuxième colonne) ; le preset d’horloge reste disponible.
+
+Cette fonction demande aussi la mise à jour du moteur Mac. Un moteur de rendu séparé prépare une image fixe, sans toucher au programme ni au SDI. Les scènes affichent leurs membres ; les vidéos montrent leur première image, et les comptes à rebours leur durée préparée. L’image est renouvelée lorsque la cible ou son contenu change. Au changement de cible, à la fin du conducteur ou à la déconnexion, l’ancienne miniature est retirée. Un rendu terminé trop tard ne peut pas remplacer celui du nouvel élément armé.
+
+L’API locale `GET /api/armed-preview.png?key=…` utilise la clé annoncée dans `armedPreview` par `/api/state` et les événements SSE. Une cible modifiée pendant le rendu renvoie HTTP 409. Avant l’activation du mode conducteur, la miniature suit le premier élément jouable à partir de la sélection, comme le prochain GO.
+
 Pour le bac régie, la vidéo et les trois nouvelles pages Stream Deck, utilise le module **0.3.0** et le [guide régie](REGIE.md). Les étapes ci-dessous décrivent le pack 0.2.2.
 
 Le module **graphX Studio 0.2.2** est installé dans Companion. La connexion `graphx` utilise le port **4318** du moteur graphX sur ce Mac. Lancez `release/graphX-0.4.app` pour disposer de toutes les commandes, notamment les scores et les ajustements de durée.
