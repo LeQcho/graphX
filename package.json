@@ -1,5 +1,5 @@
 {
-  "name": "graphx", "productName": "graphX", "version": "0.4.0", "private": true,
+  "name": "graphx", "productName": "graphX", "version": "0.4.1", "private": true,
   "description": "Live graphics. Web control. Native Blackmagic key & fill.",
   "main": "app/main.cjs", "scripts": {
     "test": "node --test tests/*.test.cjs", "preview": "node app/preview.cjs", "build:engine": "sh scripts/build-engine.sh", "package": "node scripts/package.cjs"

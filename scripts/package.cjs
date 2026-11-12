@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..'),release=path.join(root,'release'),dest=p
 const source=path.join(root,'build/electron/Electron.app');if(!fs.existsSync(source))throw Error('Runtime Electron absent de build/electron.');if(!fs.existsSync(path.join(root,'build/graphx-output')))throw Error('Compiler le moteur natif avant de créer le paquet.');
 fs.mkdirSync(release,{recursive:true});if(fs.existsSync(dest))fs.renameSync(dest,path.join(release,'graphX-previous-'+Date.now()+'.app'));
 fs.cpSync(source,dest,{recursive:true,verbatimSymlinks:true});const contents=path.join(dest,'Contents'),res=path.join(contents,'Resources');
-fs.rmSync(path.join(res,'default_app.asar'),{force:true});const appDir=path.join(res,'app');fs.mkdirSync(appDir,{recursive:true});
+fs.rmSync(path.join(res,'default_app.asar'),{force:true,recursive:true});const appDir=path.join(res,'app');fs.mkdirSync(appDir,{recursive:true});
 for(const name of ['app','web','examples','docs'])fs.cpSync(path.join(root,name),path.join(appDir,name),{recursive:true});
 fs.rmSync(path.join(appDir,'app/qa.cjs'),{force:true});for(const name of ['package.json','README.md','THIRD-PARTY-NOTICES.md'])fs.copyFileSync(path.join(root,name),path.join(appDir,name));
 fs.mkdirSync(path.join(res,'bin'),{recursive:true});fs.copyFileSync(path.join(root,'build/graphx-output'),path.join(res,'bin/graphx-output'));fs.chmodSync(path.join(res,'bin/graphx-output'),0o755);

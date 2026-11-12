@@ -2,7 +2,7 @@
 
 Application macOS de titrage live : conducteur web, PNG avec alpha, scènes multicouches, OBS et moteur natif Blackmagic. [Guide des lots 1 et 2](docs/LOTS-1-2.md) · [Companion 0.2.2](docs/COMPANION.md).
 
-Version de test : `release/graphX-0.4.app`. Les essais logiciels sont validés ; la qualification Key + Fill sur UltraStudio 4K reste à réaliser.
+Version de test : `release/graphX-0.4.1.app`. La sortie Thunderbolt ATEM Mini Extreme ISO G2 est ajoutée ; voir le [guide ATEM](docs/ATEM-THUNDERBOLT.md). La qualification visuelle dans le mélangeur et la qualification UltraStudio restent à réaliser.
 
 La build d’essai **`release/graphX-0.4-regie.app`** ajoute l’import de médias en prestation et les commandes vidéo. Le module Companion 0.3.0 et trois pages de 15 touches sont disponibles dans le [guide régie](docs/REGIE.md).
 
@@ -14,7 +14,7 @@ La build d’essai **`release/graphX-0.4-regie.app`** ajoute l’import de médi
 2. Le studio s’ouvre dans le navigateur. Le moteur reste actif dans la barre de menus.
 3. Choisir un graphique, puis **GO** ou **Espace**. **O** retire le graphique sélectionné ; **Échap** retire toutes les couches.
 4. Glisser un PNG dans le conducteur, ou choisir **Importer un PNG**. Les PNG 1920 × 1080 sont centrés à 100 % pour conserver leur placement d’origine.
-5. Pour la sortie matérielle : brancher l’UltraStudio → **Sortie vidéo** → **Actualiser** → choisir le périphérique, le format et le type d’alpha → **Activer Key + Fill**.
+5. Pour la sortie matérielle : brancher l’UltraStudio ou l’ATEM Mini Extreme ISO G2 en Thunderbolt → **Sortie vidéo** → **Actualiser** → choisir le périphérique, le format et le type d’alpha → **Activer Key + Fill**.
 
 Le dossier `examples/` contient un titrage PNG transparent et une mire alpha. Voir [le guide de premier essai](docs/PREMIER-ESSAI.md).
 
@@ -31,13 +31,13 @@ Le dossier `examples/` contient un titrage PNG transparent et une mire alpha. Vo
 - Fondu, glissement ou cut ; retrait automatique après une durée.
 - Sauvegarde locale automatique et export/import `.graphx` incluant les images.
 - Moteur Chromium hors écran 1920 × 1080 indépendant de l’onglet de commande.
-- Sortie native Blackmagic via SDK : BGRA, external keying, programmation sur l’horloge matérielle, quatre images de préchargement, compteurs de retard/perte.
+- Sortie native Blackmagic via SDK 15.3 : négociation BGRA / ARGB / YUVA 10 bits, external keying, programmation sur l’horloge matérielle, quatre images de préchargement, compteurs de retard/perte.
 - Choix 1080p25 / 30 / 50 / 59.94 / 60, sous réserve des modes exposés par le périphérique.
 - Mode d’alpha prémultiplié ou droit ; réglage Level A/B si accepté par le pilote.
 
 ## Périmètre de cette version
 
-Application construite pour **Mac Apple Silicon**, testée ici sous macOS 27.0.1. Le binaire cible macOS 12+ mais les autres versions n’ont pas été qualifiées. Blackmagic Desktop Video est requis pour le SDI. Le pilote installé lors des tests est 15.2.
+Application construite pour **Mac Apple Silicon**, testée ici sous macOS 27.0.1. Le binaire cible macOS 12+ mais les autres versions n’ont pas été qualifiées. Blackmagic Desktop Video est requis pour les sorties matérielles. Le pilote 15.2 installé a été testé avec l’ATEM Mini Extreme ISO G2 en YUVA ; utiliser un pilote récent si le matériel ou ses modes ne sont pas reconnus.
 
 **Les pixels natifs et leur alpha ont été testés. Aucune sortie physique SDI n’a pu être validée : aucun UltraStudio n’était connecté pendant la construction.** La régularité matérielle, le mapping des BNC et l’incrustation finale doivent être vérifiés à la première connexion.
 
