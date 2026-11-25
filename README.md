@@ -1,57 +1,52 @@
-# graphX 0.4
+# graphX
 
-Application macOS de titrage live : conducteur web, PNG avec alpha, scènes multicouches, OBS et moteur natif Blackmagic. [Guide des lots 1 et 2](docs/LOTS-1-2.md) · [Companion 0.2.2](docs/COMPANION.md).
+**Un studio de titrage pour les régies vidéo.** Préparez les noms, logos et habillages dans un conducteur web, contrôlez le prochain plan en aperçu, puis envoyez les graphiques à l’antenne depuis le studio ou Companion.
 
-Version de test : `release/graphX-0.4.1.app`. La sortie Thunderbolt ATEM Mini Extreme ISO G2 est ajoutée ; voir le [guide ATEM](docs/ATEM-THUNDERBOLT.md). La qualification visuelle dans le mélangeur et la qualification UltraStudio restent à réaliser.
+[Télécharger la préversion macOS 0.4.1](https://github.com/LeQcho/graphX/releases/tag/v0.4.1) · [Essayer dans le navigateur](#essayer-dans-le-navigateur) · [Configurer la sortie Blackmagic](docs/ATEM-THUNDERBOLT.md)
 
-La build d’essai **`release/graphX-0.4-regie.app`** ajoute l’import de médias en prestation et les commandes vidéo. Le module Companion 0.3.0 et trois pages de 15 touches sont disponibles dans le [guide régie](docs/REGIE.md).
+![Conducteur graphX avec les commandes de titrage et l’aperçu du programme](docs/studio-rundown-v02.png)
 
-**Le direct, simplement.** Un studio de titrage dans le navigateur, un moteur de rendu local sur Mac et une sortie native Blackmagic key + fill.
+## En régie
 
-## Tester maintenant
+- **Préparer le conducteur** avec huit couches, des scènes multicouches, des groupes, des notes, des favoris et des imports CSV. Un export `.graphx` emporte le conducteur et ses médias.
+- **Jouer les habillages** avec **GO** ou **Espace**. **O** retire l’élément sélectionné et **Échap** retire toutes les couches. Les modèles intégrés couvrent notamment les noms, logos, scores et comptes à rebours.
+- **Choisir la sortie** entre une source Navigateur transparente pour OBS et le moteur natif Blackmagic Key + Fill. Le SDK Desktop Video gère les modes exposés par l’UltraStudio ou l’ATEM Mini Extreme ISO G2 en Thunderbolt.
+- **Piloter depuis Companion** avec des actions, retours d’état, variables et presets. La [build d’essai Régie](docs/REGIE.md) ajoute l’import de médias pendant une prestation, trois pages de 15 touches et des commandes vidéo WebM.
 
-1. Ouvrir **`release/graphX-0.4.app`**. Aucun Node.js ni terminal à installer.
-2. Le studio s’ouvre dans le navigateur. Le moteur reste actif dans la barre de menus.
-3. Choisir un graphique, puis **GO** ou **Espace**. **O** retire le graphique sélectionné ; **Échap** retire toutes les couches.
-4. Glisser un PNG dans le conducteur, ou choisir **Importer un PNG**. Les PNG 1920 × 1080 sont centrés à 100 % pour conserver leur placement d’origine.
-5. Pour la sortie matérielle : brancher l’UltraStudio ou l’ATEM Mini Extreme ISO G2 en Thunderbolt → **Sortie vidéo** → **Actualiser** → choisir le périphérique, le format et le type d’alpha → **Activer Key + Fill**.
+## Essayer sur Mac
 
-Le dossier `examples/` contient un titrage PNG transparent et une mire alpha. Voir [le guide de premier essai](docs/PREMIER-ESSAI.md).
+Télécharger l’archive de la [préversion 0.4.1](https://github.com/LeQcho/graphX/releases/tag/v0.4.1) pour **Apple Silicon**. L’application ouvre le studio dans le navigateur et garde le moteur actif dans la barre des menus. Elle est signée ad hoc à ce stade.
 
-## Inclus
+1. Jouer un modèle du conducteur, puis importer le [titrage PNG](examples/Titrage-transparent-1080.png) ou la [mire alpha](examples/Mire-alpha-1080.png).
+2. Pour OBS, ajouter une source Navigateur transparente en suivant le [guide de premier essai](docs/PREMIER-ESSAI.md).
+3. Pour Key + Fill, installer Blackmagic Desktop Video, puis choisir le périphérique, la cadence et le type d’alpha dans **Sortie vidéo**. Le [guide ATEM](docs/ATEM-THUNDERBOLT.md) détaille les sources à sélectionner côté mélangeur.
 
-- Conducteur à huit couches, sélection indépendante de l’antenne, remplacement avec transition.
-- Scènes multicouches, groupes, notes, SKIP, recherche, favoris, thèmes, CSV et annuler/rétablir.
-- Préparation des médias confirmée par le moteur natif, retour de ses pixels et diagnostic exportable.
-- Companion 5.1.1 : actions, feedbacks, variables et presets liés.
-- Sortie OBS via source Navigateur transparente.
-- Sept modèles : nom/fonction, chapitre, logo, défilement, compte à rebours, score, plein écran.
-- PNG, JPEG et WebP importés ; transparence PNG préservée, position, taille et opacité ajustables.
-- Preview avec fond de contrôle et programme avec vues Alpha / Fill / Key.
-- Fondu, glissement ou cut ; retrait automatique après une durée.
-- Sauvegarde locale automatique et export/import `.graphx` incluant les images.
-- Moteur Chromium hors écran 1920 × 1080 indépendant de l’onglet de commande.
-- Sortie native Blackmagic via SDK 15.3 : négociation BGRA / ARGB / YUVA 10 bits, external keying, programmation sur l’horloge matérielle, quatre images de préchargement, compteurs de retard/perte.
-- Choix 1080p25 / 30 / 50 / 59.94 / 60, sous réserve des modes exposés par le périphérique.
-- Mode d’alpha prémultiplié ou droit ; réglage Level A/B si accepté par le pilote.
+**État du projet** · Le rendu des pixels et de l’alpha a été testé. La qualification visuelle de l’incrustation dans l’ATEM et les essais de la sortie physique UltraStudio restent à réaliser. Voir le [rapport de validation](docs/VALIDATION.md).
 
-## Périmètre de cette version
+## Essayer dans le navigateur
 
-Application construite pour **Mac Apple Silicon**, testée ici sous macOS 27.0.1. Le binaire cible macOS 12+ mais les autres versions n’ont pas été qualifiées. Blackmagic Desktop Video est requis pour les sorties matérielles. Le pilote 15.2 installé a été testé avec l’ATEM Mini Extreme ISO G2 en YUVA ; utiliser un pilote récent si le matériel ou ses modes ne sont pas reconnus.
+Avec **Node.js 22 ou ultérieur**, depuis la racine du dépôt :
 
-**Les pixels natifs et leur alpha ont été testés. Aucune sortie physique SDI n’a pu être validée : aucun UltraStudio n’était connecté pendant la construction.** La régularité matérielle, le mapping des BNC et l’incrustation finale doivent être vérifiés à la première connexion.
+```sh
+npm run preview
+```
 
-Le studio est accessible sur le Mac hôte uniquement (127.0.0.1). Pilotage réseau distant, OGraf, vidéos avec alpha, polices importées et éditeur de formes libres ne sont pas inclus dans 0.4.0.
+Ouvrir l’adresse affichée par le serveur. L’aperçu web permet d’explorer le conducteur, les modèles et l’import. La sortie Blackmagic se teste avec l’application Mac.
 
-La version locale est signée ad hoc, sans signature Developer ID ni notarisation Apple. Elle est livrée pour essai sur ce Mac ; la distribution à d’autres machines reste à préparer.
+## Architecture et développement
 
-## Données
+Le studio web commande un moteur Chromium hors écran. Electron gère l’application Mac et le serveur local. Un helper C++ pilote la sortie matérielle via le SDK Blackmagic. Les médias sont stockés sur le Mac hôte dans `~/Library/Application Support/graphX/`.
 
-Par défaut : `~/Library/Application Support/graphX/`. `project.json` contient le conducteur, `project.json.bak` la copie de secours et `media/` les images. Le programme à l’antenne n’est pas relancé à l’ouverture : le moteur démarre transparent et SDI arrêté.
+```sh
+npm test
+npm run build:engine
+npm run package
+```
 
-Aucun compte, cloud ou service externe n’est nécessaire. Les images sont copiées localement. Aucun chargement de script HTML arbitraire n’est accepté.
+La compilation du moteur et l’empaquetage nécessitent les outils Apple ainsi que le runtime Electron décrit dans [Architecture](docs/ARCHITECTURE.md). Consulter aussi les [avis de licences tierces](THIRD-PARTY-NOTICES.md).
 
-## Essai vidéo alpha
+<details>
+<summary>Essai vidéo avec transparence</summary>
 
 Dans la build d’essai vidéo, **Importer une vidéo** ajoute un habillage WebM au conducteur. Utilise un **WebM VP9 avec alpha**, en 1920 × 1080 maximum, jusqu’à 250 Mio et 30 minutes. La lecture est muette. Sur le PC de régie, utilise Chrome ou Edge pour l’aperçu.
 
@@ -65,27 +60,11 @@ ffmpeg -i habillage.mov -c:v libvpx-vp9 -pix_fmt yuva420p -crf 24 -b:v 0 -an hab
 
 Vérifie la transparence en prévisualisation avant le GO. [WebM avec alpha dans Chromium](https://developer.chrome.com/blog/alpha-transparency-in-chrome-video)
 
-## Développement
+</details>
 
-Node.js 22+ permet de lancer les tests et l’aperçu web :
+## Documentation
 
-```sh
-node --test tests/*.test.cjs companion/companion-module-graphx-studio/tests/*.test.js
-node app/preview.cjs
-```
-
-Compiler le helper natif avec les outils Apple :
-
-```sh
-sh scripts/build-engine.sh
-```
-
-Le runtime Electron 45.1.0 officiel arm64 est conservé dans `build/electron/` pour cette construction. Sa somme SHA-256 a été vérifiée à partir du fichier SHASUMS256 publié avec la release. Pour reconstruire l’application :
-
-```sh
-node scripts/package.cjs
-```
-
-L’aperçu web seul n’offre pas de sortie Blackmagic. Le binaire Electron exécute `app/main.cjs`, qui lance le rendu hors écran, le serveur local et le helper `graphx-output`.
-
-[Architecture](docs/ARCHITECTURE.md) · [Validation](docs/VALIDATION.md) · [Licences tierces](THIRD-PARTY-NOTICES.md)
+- [Guide de premier essai](docs/PREMIER-ESSAI.md)
+- [Scènes, modèles, CSV et sauvegardes](docs/LOTS-1-2.md)
+- [Companion](docs/COMPANION.md) et [workflow Régie](docs/REGIE.md)
+- [Sortie Thunderbolt ATEM](docs/ATEM-THUNDERBOLT.md)
